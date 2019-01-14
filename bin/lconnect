@@ -1,0 +1,7 @@
+#!/usr/bin/env node
+
+var path = require('path');
+var fs   = require('fs');
+var local_path  = path.join(path.dirname(fs.realpathSync(__filename)), '../');
+
+require(local_path + '/index');

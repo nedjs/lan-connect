@@ -1,5 +1,11 @@
 {
+	"name": "lconnect",
 	"version": "1.0.0",
+	"preferGlobal": "true",
+	"main": "./bin/lconnect",
+	"bin": {
+		"lconnect": "./bin/lconnect"
+	},
 	"dependencies": {
 		"commander": "^2.19.0",
 		"netmask": "^1.0.6"
