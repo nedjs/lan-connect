@@ -8,14 +8,14 @@ Check it works
 
 	# lconnect -h
     Usage: lconnect [options]
-    
+
     Options:
       -V, --version          output the version number
       -l, --listen           Listen for incoming connections (be a host).
       -p, --port [port]      Port for TCP connection [5528] (default: 5528)
       -u, --udp-port [port]  UDP broadcast port to use [5524] (default: 5525)
-      -v, --verbose          Verbose output, will print debugging information
-      -vv, --very-verbose    Extreme verbose output, will print lots of information, this includes verbose output
+      -d, --debug            Print debugging information
+      -v, --verbose          Verbose output, will print lots of information, this includes verbose output
       -h, --help             output usage information
 
 

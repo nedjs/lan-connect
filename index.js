@@ -4,7 +4,7 @@ const Netmask = require('netmask').Netmask
 const os = require('os');
 const net = require('net');
 const program = require('./lib/program');
-const log = require('./lib/log');
+const log = require('./lib/log.js');
 
 
 (async function() {
@@ -87,7 +87,7 @@ async function broadcast(serverPort, broadcastPort, stopBroadcastFn) {
 				return new Promise((resolve, reject) => {
 					let client = dgram.createSocket('udp4');
 
-					let message = iface.address+":"+serverPort;
+					let message = iface.address+":"+serverPort; 
 					log.verbose('Broadcast to ' + iface.broadcastAddr + ':' + broadcastPort + ' with connect request to: ' + message);
 					client.send(Buffer.from(message), broadcastPort, iface.broadcastAddr, function(error) {
 						if(error) {
