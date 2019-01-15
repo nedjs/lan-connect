@@ -3,43 +3,17 @@ const buffer = require('buffer');
 const Netmask = require('netmask').Netmask
 const os = require('os');
 const net = require('net');
-const pjson = require('./package.json');
-
-
-var program = require('commander');
-
-program
-  .version(pjson.version)
-  .option('-l, --listen', 'Listen for incoming connections (be a host).')
-  .option('-p, --port [port]', 'Port for TCP connection [5528]', 5528)
-  .option('-u, --udp-port [port]', 'UDP broadcast port to use [5524]', 5525)
-  .option('-v, --verbose', 'Verbose output, will print debugging information')
-  .option('-vv, --very-verbose', 'Extreme verbose output, will print lots of information, this includes verbose output')
-  .parse(process.argv);
-
-const IS_LISTEN = program.listen;
-const SERVER_PORT = program.port;
-const BROADCAST_PORT = program.udpPort;
-
-const debug = (...output) => {
-	if(program.verbose) {
-		console.log('[debug]', ...output);
-	}
-}
-const verbose = (...output) => {
-	if(program.veryVerbose) {
-		console.log('[verbose]', ...output);
-	}
-}
+const program = require('./lib/program');
+const log = require('./lib/log');
 
 
 (async function() {
-	if(IS_LISTEN) {
+	if(program.listen) {
 		let stopBroadcast = false;
 		let broadcastFn = () => stopBroadcast;
 		// start listening for tcp connections
-		let server = await listenServer(SERVER_PORT, (client) => {
-			console.log('Client connected ' + client.address().address);
+		let server = await listenServer(program.port, (client) => {
+			log.tty('Client connected ' + client.address().address);
 
 			createClientLifecycleHandler(client, () => {
 				client.destroy();
@@ -53,16 +27,16 @@ const verbose = (...output) => {
 			// once a client connects then dont broadcast on udp anymore
 			stopBroadcast = true;
 		});
-		console.log('Server started on port ' + server.address().port);
+		log.tty('Server started on port ' + server.address().port);
 		// start broadcasting udp info about the server
-		await broadcast(server.address().port, BROADCAST_PORT, broadcastFn);
+		await broadcast(server.address().port, program.udpPort, broadcastFn);
 	} else {
-		console.log('Listening for server connect packets');
-		let address = await listenForBroadcast(BROADCAST_PORT);
+		log.tty('Listening for server connect packets');
+		let address = await listenForBroadcast(program.udpPort);
 
 		var client = new net.Socket();
 		client.connect(address.port, address.address, function() {
-			console.log('Connected to ' + address.address + ' on port ' + address.port)
+			log.tty('Connected to ' + address.address + ' on port ' + address.port)
 			process.stdin.pipe(client);
 			client.pipe(process.stdout);
 		});
@@ -77,7 +51,7 @@ const verbose = (...output) => {
 
 function createClientLifecycleHandler(client, onEnd) {
 	let destroyFn = (type) => (...args) => {
-		debug('Client connection terminated from client "' + type + '" event', ...(args || []));
+		log.debug('Client connection terminated from client "' + type + '" event', ...(args || []));
 		client.destroy();
 		if(onEnd) {
 			onEnd(...args);
@@ -105,7 +79,7 @@ async function broadcast(serverPort, broadcastPort, stopBroadcastFn) {
 			return iface;
 		});
 
-	debug('Sending broadcast to: ', ifaces.map(i => i.broadcastAddr))
+	log.debug('Sending broadcast to: ', ifaces.map(i => i.broadcastAddr))
 	while(!stopBroadcastFn()) {
 		await Promise.all(Object.values(ifaces)
 			.filter(iface => !iface.skip)
@@ -114,10 +88,10 @@ async function broadcast(serverPort, broadcastPort, stopBroadcastFn) {
 					let client = dgram.createSocket('udp4');
 
 					let message = iface.address+":"+serverPort;
-					verbose('Broadcast to ' + iface.broadcastAddr + ':' + broadcastPort + ' with connect request to: ' + message);
+					log.verbose('Broadcast to ' + iface.broadcastAddr + ':' + broadcastPort + ' with connect request to: ' + message);
 					client.send(Buffer.from(message), broadcastPort, iface.broadcastAddr, function(error) {
 						if(error) {
-							debug('Failed to broadcast on ' + iface.broadcastAddr + ' skipping future packets', error);
+							log.debug('Failed to broadcast on ' + iface.broadcastAddr + ' skipping future packets', error);
 							iface.skip = true;
 						} else {
 						}
@@ -128,7 +102,7 @@ async function broadcast(serverPort, broadcastPort, stopBroadcastFn) {
 			}));
 		await new Promise(r => setTimeout(() => r(), 1000));
 	}
-	verbose('Broadcasting ending');
+	log.verbose('Broadcasting ending');
 }
 
 async function listenServer(port, onConnect) {
